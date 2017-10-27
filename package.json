@@ -1,12 +1,15 @@
 {
   "name": "deku-state",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Let Deku components keep state.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["deku", "stateful"],
+  "keywords": [
+    "deku",
+    "stateful"
+  ],
   "author": "Alex Liu",
   "license": "MIC"
 }
