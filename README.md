@@ -54,18 +54,15 @@ let Button = {
 
 Wrapper = stateful(Wrapper)
 Button = stateful(Button)
-// Create a Redux store to handle all UI actions and side-effects
-// let store = createStore(reducer)
 
 function dispatch(){
   render(
     <Wrapper show={true}><Button>button</Button></Wrapper>
   )
 }
-// Create an app that can turn vnodes into real DOM elements
+
 let render = createApp(document.body, dispatch)
 
-// Update the page and add redux state to the context
 dispatch()
 
 ```
