@@ -17,7 +17,7 @@ function stateful(Component) {
   let _components = {}
   // cache previous props and state
   let _previous = {}
-
+  const INIT_TYPE = '_stateful_init_dispatch_type'
   /**
    * let options be with state.
    * @param {Object} options 
@@ -26,6 +26,11 @@ function stateful(Component) {
     let {path} = options
     let state = _states[path]
     return {...options, state}
+  }
+
+  let _updatePrevious = function({path, props}){
+    let state = _states[path]
+    _previous[path] = {..._previous[path], prevProps: props, prevState: state}
   }
   /**
    * run before render, do some initial operation
@@ -36,8 +41,8 @@ function stateful(Component) {
     
     if(!Component.setState){
       Component.setState = (data) => {
-        _states[path] = data
-        return dispatch(_states[path])
+        _states[path] = {..._states[path], ...data}
+        return dispatch({..._states[path], type: INIT_TYPE})
       }
     }
 
@@ -46,13 +51,12 @@ function stateful(Component) {
     }
     if(!_states[path]){
       //initial state and only run one time before render.
-      let state = _states[path] = {}
       if(Component.initialState){
         let s = Component.initialState({props, path})
-        state = _states[path] = s || {}
+        _states[path] = s || {}
       }
       if(props.state){
-        state = Object.assign(state, props.state)
+        _states[path] = {...state, ...props.state}
       }
       
       if(Component.onBefore){
@@ -77,9 +81,15 @@ function stateful(Component) {
    * @param {Object} options 
    */
   let onUpdate = function(options){
-    if(Component.onUpdate){
-      return Component.onUpdate(model(options))
+    let {path} = options, ret
+    let md = model(options)
+    let {prevProps, prevState} = _previous[path]
+    if(Component.onUpdate && shouldUpdate && shouldUpdate({...md, prevProps, prevState})){
+      ret = Component.onUpdate(md)
+      //update previous props and state
+      _updatePrevious(options)
     }
+    return ret
   }
   
   /**
@@ -96,14 +106,15 @@ function stateful(Component) {
     //cache the component
     
     //you can optimise the app by using shouldUpdate
-    if(shouldUpdate && shouldUpdate({...options, state, prevProps, prevState})){
+    if(!_components[path]){
       _components[path] = Component.render({...options, state, setState})
-    }else{
-      _components[path] = _components[path] || Component.render({...options, state, setState})
+      //update previous props and state when create
+      _updatePrevious(options)
+    }else if(shouldUpdate && shouldUpdate({...options, state, prevProps, prevState})){
+      _components[path] = Component.render({...options, state, setState})
     }
 
-    //update previous props and state
-    _previous[path] = Object.assign(_previous[path], {prevProps: props, prevState: state})
+    
     
     return _components[path]
   }
@@ -125,10 +136,14 @@ function stateful(Component) {
   
 
 
-  return Object.assign({},Component, {render,
-    onUpdate,
-    onCreate,
-    onRemove})
+  return Object.assign({},
+    Component, 
+    {
+      render,
+      onUpdate,
+      onCreate,
+      onRemove
+    })
 }
 
 export default stateful
